@@ -97,7 +97,7 @@ The selected knobs will be saved in `./knob/opt_space.json` .
           'port': 3306
       }
     ```
-    and LLM server url 
+    and server url 
     ```python
      url = ''
     ```
