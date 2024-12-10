@@ -6,343 +6,6 @@ import os,sys
 from comparator import comparator
 import heapq
 
-history_knobs = """
-{
-    "tmp_table_size": 16127516,
-    "max_heap_table_size": 542958715,
-    "query_prealloc_size": 2897026,
-    "innodb_thread_concurrency": 126,
-    "sort_buffer_size": 127236112,
-    "innodb_buffer_pool_size": 15169920679,
-    "innodb_max_dirty_pages_pct_lwm": 54,
-    "innodb_purge_threads": 29,
-    "table_open_cache_instances": 53,
-    "innodb_compression_failure_threshold_pct": 64,
-    "innodb_purge_batch_size": 4630,
-    "expire_logs_days": 55,
-    "innodb_lru_scan_depth": 5027,
-    "innodb_max_dirty_pages_pct": 59,
-    "innodb_write_io_threads": 9,
-    "innodb_stats_transient_sample_pages": 18,
-    "div_precision_incrementm": 28,
-    "innodb_spin_wait_delay": 5779,
-    "innodb_compression_pad_pct_max": 29,
-    "innodb_read_ahead_threshold": 25
-}
-"""
-OLAP_history_knobs = """
-{
-    "innodb_buffer_pool_size": 134217728
-    "sort_buffer_size": 262144
-    "read_buffer_size": 131072
-    "innodb_log_buffer_size": 16777216
-    "innodb_io_capacity": 200
-    "innodb_io_capacity_max": 2000
-    "max_connections": 151
-    "innodb_thread_concurrency": 0
-    "query_cache_size": 1048576
-    "tmp_table_size": 16777216
-}
-"""
-
-history_metrics = """
-{
-    "lock_deadlocks": 0,
-    "lock_timeouts": 0,
-    "lock_row_lock_current_waits": 0,
-    "lock_row_lock_time": 0,
-    "lock_row_lock_time_max": 0,
-    "lock_row_lock_waits": 0,
-    "lock_row_lock_time_avg": 0,
-    "buffer_pool_size": 16106127360,
-    "buffer_pool_reads": 94203,
-    "buffer_pool_read_requests": 2990409,
-    "buffer_pool_write_requests": 469598,
-    "buffer_pool_wait_free": 0,
-    "buffer_pool_read_ahead": 2317,
-    "buffer_pool_read_ahead_evicted": 0,
-    "buffer_pool_pages_total": 982980,
-    "buffer_pool_pages_misc": 577,
-    "buffer_pool_pages_data": 104773,
-    "buffer_pool_bytes_data": 1716600832,
-    "buffer_pool_pages_dirty": 40527,
-    "buffer_pool_bytes_dirty": 663994368,
-    "buffer_pool_pages_free": 877630,
-    "buffer_pages_created": 705,
-    "buffer_pages_written": 10900,
-    "buffer_pages_read": 104068,
-    "buffer_data_reads": 1703793152,
-    "buffer_data_written": 394297344,
-    "os_data_reads": 104135,
-    "os_data_writes": 13327,
-    "os_data_fsyncs": 5230,
-    "os_log_bytes_written": 37642752,
-    "os_log_fsyncs": 1979,
-    "os_log_pending_fsyncs": 0,
-    "os_log_pending_writes": 0,
-    "trx_rseg_history_len": 4317,
-    "log_waits": 0,
-    "log_write_requests": 83048,
-    "log_writes": 1959,
-    "log_padded": 6734848,
-    "adaptive_hash_searches": 131228,
-    "adaptive_hash_searches_btree": 430491,
-    "file_num_open_files": 66,
-    "ibuf_merges_insert": 7424,
-    "ibuf_merges_delete_mark": 14342,
-    "ibuf_merges_delete": 3468,
-    "ibuf_merges_discard_insert": 0,
-    "ibuf_merges_discard_delete_mark": 0,
-    "ibuf_merges_discard_delete": 0,
-    "ibuf_merges": 16996,
-    "ibuf_size": 77,
-    "innodb_activity_count": 57537,
-    "innodb_dblwr_writes": 437,
-    "innodb_dblwr_pages_written": 10867,
-    "innodb_page_size": 16384,
-    "innodb_rwlock_s_spin_waits": 0,
-    "innodb_rwlock_x_spin_waits": 0,
-    "innodb_rwlock_sx_spin_waits": 290,
-    "innodb_rwlock_s_spin_rounds": 17032,
-    "innodb_rwlock_x_spin_rounds": 6593,
-    "innodb_rwlock_sx_spin_rounds": 1292,
-    "innodb_rwlock_s_os_waits": 93,
-    "innodb_rwlock_x_os_waits": 38,
-    "innodb_rwlock_sx_os_waits": 10,
-    "dml_inserts": 13829,
-    "dml_deletes": 13829,
-    "dml_updates": 27658
-}
-"""
-
-OLAP_history_output = """
-{
-    "innodb_buffer_pool_size": 13145128679, "sort_buffer_size": 98807428, "read_buffer_size": 256284660, "innodb_log_buffer_size": 371545610, "innodb_io_capacity": 80637, "innodb_io_capacity_max": 17548, "max_connections": 29461, "innodb_thread_concurrency": 265, "query_cache_size": 708770588, "tmp_table_size": 673863811
-}
-"""
-
-history_output = """
-{
-    "tmp_table_size": 866896964,
-    "max_heap_table_size": 643296362,
-    "query_prealloc_size": 2092905,
-    "innodb_thread_concurrency": 285,
-    "sort_buffer_size": 79669047,
-    "innodb_buffer_pool_size": 11003533276,
-    "innodb_max_dirty_pages_pct_lwm": 87,
-    "innodb_purge_threads": 29,
-    "table_open_cache_instances": 28,
-    "innodb_compression_failure_threshold_pct": 80,
-    "innodb_purge_batch_size": 4223,
-    "expire_logs_days": 32,
-    "innodb_lru_scan_depth": 9632,
-    "innodb_max_dirty_pages_pct": 57,
-    "innodb_write_io_threads": 31,
-    "innodb_stats_transient_sample_pages": 80,
-    "div_precision_increment": 5,
-    "innodb_spin_wait_delay": 3278,
-    "innodb_compression_pad_pct_max": 25,
-    "innodb_read_ahead_threshold": 29
-}
-"""
-
-OLAP_knobs = """
-    {
-    "innodb_buffer_pool_size": {
-        "max": 17179869184,   
-        "min": 10737418240,
-        "type": "integer",
-        "description": "The size in bytes of the buffer pool, the memory area where InnoDB caches table and index data."
-    },
-    "sort_buffer_size": {
-        "max": 134217728,
-        "min": 32768,
-        "type": "integer",
-        "description": "This variable defines: For related information, see Section 14."
-    },
-    "read_buffer_size": {
-        "max": 2147479552,
-        "min": 8192,
-        "type": "integer",
-        "description": "Each thread that does a sequential scan for a MyISAM table allocates a buffer of this size (in bytes) for each table it scans."
-    },
-    "innodb_log_buffer_size": {
-        "max": 4294967295,
-        "min": 262144,
-        "type": "integer",
-        "description": "The size in bytes of the buffer that InnoDB uses to write to the log files on disk."
-    },
-    "innodb_io_capacity": {
-        "max": 2000000,
-        "min": 100,
-        "type": "integer",
-        "description": "The innodb_io_capacity variable defines the number of I/O operations per second (IOPS) available to InnoDB background tasks, such as flushing pages from the buffer pool and merging data from the change buffer."
-    },
-    "innodb_io_capacity_max": {
-        "max": 40000,
-        "min": 100,
-        "type": "integer",
-        "description": "If flushing activity falls behind, InnoDB can flush more aggressively, at a higher rate of I/O operations per second (IOPS) than defined by the innodb_io_capacity variable."
-    },
-    "max_connections": {
-        "max": 100000,
-        "min": 1,
-        "type": "integer",
-        "description": "The maximum permitted number of simultaneous client connections."
-
-    },
-    "innodb_thread_concurrency": {
-        "max": 1000,
-        "min": 0,
-        "type": "integer",
-        "description": "Defines the maximum number of threads permitted inside of InnoDB."
-    },
-    "query_cache_size": {
-        "max": 2147483648,
-        "min": 0,
-        "type": "integer",
-        "description": "The amount of memory allocated for caching query results."
-    },
-    "tmp_table_size": {
-        "max": 1073741824,
-        "min": 1024,
-        "type": "integer",
-        "description": "The maximum size of internal in-memory temporary tables."
-    }
-}
-"""
-
-knobs = """
-{
-    "innodb_buffer_pool_size": {
-        "min": "8G",
-        "max": "12G",
-        "type": "integer",
-        "special_value": null,
-        "description": "Caches table and index data, significantly impacting read and write performance."
-    },
-    "innodb_log_file_size": {
-        "min": "256M",
-        "max": "2G",
-        "type": "integer",
-        "special_value": null,
-        "description": "Affects the performance of write operations and recovery time."
-    },
-    "innodb_flush_log_at_trx_commit": {
-        "enum_values": ["0", "1", "2"],
-        "type": "enum",
-        "special_value": ["0", "1", "2"],  // 0: Improves performance but sacrifices durability; 1: Ensures durability for each transaction; 2: Balances performance with some durability
-        "description": "Controls the durability of transactions, influencing write throughput."
-    },
-    "innodb_thread_concurrency": {
-        "min": 0,
-        "max": 16,
-        "type": "integer",
-        "special_value": 0,  // 0: Allows unlimited concurrent threads
-        "description": "Limits the number of threads that can enter InnoDB, affecting concurrency."
-    },
-    "innodb_io_capacity": {
-        "min": 200,
-        "max": 2000,
-        "type": "integer",
-        "description": "Determines the I/O capacity for background operations, impacting write performance."
-    },
-    "innodb_read_io_threads": {
-        "min": 2,
-        "max": 8,
-        "type": "integer",
-        "description": "Number of I/O threads for read operations, affecting read throughput."
-    },
-    "innodb_write_io_threads": {
-        "min": 2,
-        "max": 8,
-        "type": "integer",
-        "description": "Number of I/O threads for write operations, affecting write throughput."
-    },
-    "innodb_max_dirty_pages_pct": {
-        "min": 60,
-        "max": 90,
-        "type": "integer",
-        "description": "Controls the percentage of dirty pages in the buffer pool, impacting flushing behavior."
-    },
-    "innodb_adaptive_flushing": {
-        "enum_values": ["ON", "OFF"],
-        "type": "enum",
-        "special_value": ["ON", "OFF"],  // ON: Enables adaptive flushing; OFF: Disables adaptive flushing
-        "description": "Helps in maintaining a steady state of flushing, impacting write performance."
-    },
-    "innodb_flush_neighbors": {
-        "min": 0,
-        "max": 2,
-        "type": "integer",
-        "special_value": [0, 1, 2],  // 0: Disables flush neighbors (better for SSDs); 1: Enables neighbor flushing; 2: Maximizes neighbor flushing
-        "description": "Affects the flushing of pages, impacting I/O performance."
-    },
-    "innodb_adaptive_hash_index": {
-        "enum_values": ["ON", "OFF"],
-        "type": "enum",
-        "special_value": ["ON", "OFF"],  // ON: Enables adaptive hash index for faster lookups; OFF: Disables to reduce memory usage
-        "description": "Can improve performance for certain workloads by speeding up index lookups."
-    },
-    "innodb_change_buffering": {
-        "enum_values": ["none", "inserts", "deletes", "changes", "purges", "all"],
-        "type": "enum",
-        "special_value": ["none", "inserts", "deletes", "changes", "purges", "all"],  // none: Disables change buffering; all: Buffers all operations; other options buffer specific operations
-        "description": "Buffers changes to secondary indexes, impacting write performance."
-    },
-    "innodb_doublewrite": {
-        "enum_values": ["ON", "OFF"],
-        "type": "enum",
-        "special_value": ["ON", "OFF"],  // ON: Provides data integrity; OFF: Disables for performance gains at the risk of data loss
-        "description": "Provides data integrity but can be disabled for performance gains at the risk of data loss."
-    },
-    "innodb_lru_scan_depth": {
-        "min": 1000,
-        "max": 2048,
-        "type": "integer",
-        "description": "Influences the flushing algorithm, impacting buffer pool performance."
-    },
-    "innodb_purge_threads": {
-        "min": 1,
-        "max": 4,
-        "type": "integer",
-        "description": "Number of threads for purge operations, affecting background processing."
-    },
-    "innodb_page_cleaners": {
-        "min": 1,
-        "max": 4,
-        "type": "integer",
-        "description": "Number of page cleaner threads, impacting the flushing of dirty pages."
-    },
-    "innodb_spin_wait_delay": {
-        "min": 6,
-        "max": 30,
-        "type": "integer",
-        "description": "Affects the performance of spin locks, impacting concurrency."
-    },
-    "innodb_flush_log_at_timeout": {
-        "min": 1,
-        "max": 10,
-        "type": "integer",
-        "description": "Controls the frequency of log flushing, impacting durability and performance."
-    },
-    "innodb_adaptive_max_sleep_delay": {
-        "min": 0,
-        "max": 1000000,
-        "type": "integer",
-        "special_value": 0,  // 0: Disables adaptive sleep delay
-        "description": "Allows InnoDB to adjust sleep delay based on workload, impacting performance."
-    },
-    "innodb_old_blocks_time": {
-        "min": 0,
-        "max": 1000,
-        "type": "integer",
-        "special_value": 0,  // 0: Disables old block protection
-        "description": "Protects the buffer pool from being filled with transient data, impacting cache efficiency."
-    }
-}
-
-"""
 
 inner_metrics = """
 {
@@ -430,7 +93,6 @@ OLAP_environment = """
 db_metric = "throughput"
 
 def extract_key_value_pairs(json_string):
-    # 正则表达式匹配 "key": value 模式
     pattern = re.compile(r'"(\w+)":\s*([\d.]+)')
     matches = pattern.findall(json_string)
     data = {key: int(value) for key, value in matches}
@@ -455,29 +117,26 @@ def replace_units(json_string):
     def replace_match(match):
         return str(convert_to_bytes(match.group(0)))
     
-    # 替换带单位的数值
+    # Replace the values with units
     json_string = re.sub(r'\d+[KMGT]B', replace_match, json_string)
     return json_string
 
 
 def remove_comments(json_string):
-    # 去除行尾的单行注释
+    # Remove single-line comments 
     json_string = re.sub(r'//.*', '', json_string)
-    # 去除多行注释
+    # Remove multi-line comments
     json_string = re.sub(r'/\*.*?\*/', '', json_string, flags=re.DOTALL)
-    # 移除多余的逗号
+    # Remove unnecessary commas
     json_string = re.sub(r',\s*}', '}', json_string)
     json_string = re.sub(r',\s*]', ']', json_string)
     return json_string
 
 def call_open_source_llm(model, messages,filename):
-    with open('./recommand/gpt4_multi',"a") as f:
-        json.dump(messages, f, indent=4)
-        f.close()
 
     client = OpenAI(
-        api_key= , 
-        base_url=
+        api_key= , # your api_key
+        base_url= 
     )
 
     completion = client.chat.completions.create(
@@ -488,9 +147,6 @@ def call_open_source_llm(model, messages,filename):
     )
 
     for choice in completion.choices:
-        with open('./recommand/gpt4_multi',"a") as f:
-            f.write(choice.message.content)
-            f.close()
 
         pattern = r'\{[^{}]+\}'
         match = re.search(pattern, choice.message.content, re.DOTALL)
@@ -499,9 +155,9 @@ def call_open_source_llm(model, messages,filename):
             json_str = match.group(0)
             json_str = replace_units(json_str)
             config_dict = extract_key_value_pairs(json_str)
-            #json_str = remove_comments(json_str)
-            #config_dict = json.loads(json_str)
+
             print(config_dict)
+            # Check if the parameter format is valid
             if not config_dict:
                 return
             config_dict = json.dumps(config_dict)
@@ -511,9 +167,8 @@ def call_open_source_llm(model, messages,filename):
             # Split the data into individual JSON strings
             json_strings = data_str.strip().split('\n')
 
-            # # Prepare the final structured JSON format
-            # for json_str in json_strings:
-            #     d = json.loads(json_str)
+
+            # Remove duplicates
             if config_dict in json_strings :
                 return
             with open(filename, 'a') as f:
@@ -526,13 +181,6 @@ def call_open_source_llm(model, messages,filename):
 
 
 
-last_result = {
-    "innodb_io_capacity": 1000,
-    "innodb_read_io_threads": 8,
-    "innodb_write_io_threads": 8,
-    "innodb_max_dirty_pages_pct": 75
-}
-
 history_top5 = []
 app = Flask(__name__)
 request_count = 0
@@ -543,9 +191,9 @@ def process_data():
     global request_count
     global history_top5
     request_count += 1
-    filename = f'./multi_answer/history_gpt4_multi_{request_count}'
-    file = open(filename, 'w')
-    file.close()
+    filename = os.path.join("knob", "candidate_configs")
+    with open(filename, 'w') as file:
+        pass 
 
     data = request.get_json()
     for item in data:
@@ -561,15 +209,22 @@ def process_data():
         print(throughput)
 
         if len(history_top5) < 5:
-            # 如果队列未满，直接加入
+            # add the record directly if the memory window is not full
             heapq.heappush(history_top5, (throughput, item))
         else:
-            # 队列已满，比较最小值，如果当前记录更大，则替换
+            # compare the minimum value. If the current record is larger, replace it.
             heapq.heappushpop(history_top5, (throughput, item))
 
         if throughput == 0 :
             throughput = "0, because database starting failed under current configuration"
         
+        json_file_path = os.path.join("knob", "opt_space.json")
+        with open(json_file_path, 'r') as file:
+            knob_sapce = json.load(file)
+        
+        knobs = json.dumps(knob_sapce, indent=4)
+
+
         messages = [
         {
             "role": "system",
@@ -593,12 +248,7 @@ def process_data():
                 {inner_metric}
 
                 Historical Knob Tuning Tasks:
-                - Previous Configuration(input) :
-                {history_knob}
-                - Inner Metrics(input) :
-                {history_metric}
-                - Optimized Configuration(output) :
-                {history_output}
+                {Memeory_Window}
 
                 Output Format:
                 Strictly utilize the aforementioned knobs, ensuring that the generated configuration are formatted as follows:
@@ -616,14 +266,12 @@ def process_data():
 
                 Now, let's think step by step.
 
-            """.format(knob=knobs, inner_metric=inner_metrics, last_knob = last_knobs, now_inner_metric = now_inner_metrics, throughput = throughput, environment=environment, db_metric = db_metric, history_knob = history_knobs, history_metric = history_metrics, history_output = history_output )
+            """.format(knob=knobs, inner_metric=inner_metrics, last_knob = last_knobs, now_inner_metric = now_inner_metrics, throughput = throughput, environment=environment, db_metric = db_metric, Memeory_Window=history_top5 )
         }
         ]
 
         model = "gpt-4-0125-preview"
 
-        global last_result
-        #result = call_local_llm(base_url, model, extra_body, messages)
         i = 0
         while i<5 :
             i = i+1
@@ -631,23 +279,25 @@ def process_data():
     
     with open(filename, 'r') as f:
         data_str = f.read()
-        check = data_str.strip()  # 使用 .strip() 去除空格和换行符
-        if not check:  # 如果去除空格和换行符后为空
+        check = data_str.strip() 
+        if not check:  # Failed to find a new configuration
             print("File is empty")
-            data_str = last_result
+            exit(0)
     
     with open(filename, 'r') as f:
         data_str = f.read()
         # Split the data into individual JSON strings
         json_strings = data_str.strip().split('\n')
     
+    # select the top 2 from the candidate set through comparator
+    if request_count % 20 == 0:
+        comparator.online_train_comparator('record/history')
     top_two = comparator.sort_list(now_inner_metrics, json_strings)
-    
 
-
-    # 将结果返回给服务器A
+    # Return the result to tuner
     return jsonify(top_two)
 
 if __name__ == '__main__':
+    # port
     app.run(host='0.0.0.0', port=5000)
 

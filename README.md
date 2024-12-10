@@ -1,7 +1,7 @@
 # LTune
 This is the source code to the paper "LTune: An Efficient and Reliable Database Tuning System via LLM-Driven Tree Search". Please refer to the paper for the experimental details.
 
-
+## Run Experiments
 ## Environment Installation
 
 In our experiments,  We conduct experimets on MySQL 5.7.
@@ -53,20 +53,21 @@ Download IMDB Data Set from http://homepages.cwi.nl/~boncz/job/imdb.tgz.
 
 Follow the instructions of https://github.com/winkyao/join-order-benchmark to load data into MySQL.
 
+
 ## Knob Space Optimizer
 
-Modify  `Workload and database kernel information` in `pruning.py` and `Select.py` to match your workload and database kernel information. Then
+Modify  `Workload and database kernel information` in `pruning.py` and `selection.py` to match your workload and database kernel information. Then
 
 ```shell
 python space_optimizer.py
 ```
 
-The selected knobs will be saved in `./knob/opt_space.json` .
+The selected knobs will be saved in `knob/opt_space.json` .
 
 ## Guided Tree-based Knob Recommender
 
 1. execute tuning server
-    - modify   `tuning_server.py` and fill the model you want to use and the corresponding API-Key in
+    - fill the model you want to use and the corresponding API-Key in `tuning_server.py`
     ```python
       model = ""
       client = OpenAI(
@@ -74,11 +75,13 @@ The selected knobs will be saved in `./knob/opt_space.json` .
           api_key="",
       )
     ```
-    and select port in 
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;and select port in 
+
     ```python
       app.run(host='0.0.0.0', port=5000)
     ```
-    
+   - Similar to **Knob Space Optimizer**, modify the Workload and database kernel information in `tuning_server.py` to align with your workload and database kernel information.
+
    - run
     ```shell
     nohup python -u tuning_server.py >out.log 2>&1 &
@@ -101,7 +104,13 @@ The selected knobs will be saved in `./knob/opt_space.json` .
     ```python
      url = ''
     ```
+
+   - set the number of iterations
+    ```python
+     iteration_number = 100
+    ```
    - tune
    ```shell
     nohup python -u tuner.py 2>&1 &
    ```
+   The tuning records can be found in `record/history`

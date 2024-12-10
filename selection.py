@@ -1,5 +1,7 @@
 from openai import OpenAI
+import re
 
+# candidate knobs, which can be easily scraped from the database documentation
 knobs = """
     {
     "tmp_table_size": {
@@ -656,7 +658,7 @@ messages = [
         "role": "user",
         "content": """
             Task Overview: 
-            Select the 20 most important knobs from the 100 provided and give their range of values for the current tuning task in order to optmize the throughput metric. 
+            Select the 20 most important knobs from the 100 provided for the current tuning task in order to optmize the throughput metric. 
             Workload and database kernel information: 
             - Workload: OLTP, SYSBENCH Read-Write Mixed Model, Read-Write Ratio = 50%, threads=32 .
             - Data: 13 GB data contains 50 tables and each table contains 1,000,000 rows of record.
@@ -675,9 +677,9 @@ messages = [
 ]
 
 
-def call_open_source_llm_1(model):
+def call_open_source_llm(model):
     client = OpenAI(
-        api_key=, 
+        api_key=, # your api_key
         base_url=
     )
 
@@ -693,13 +695,13 @@ def call_open_source_llm_1(model):
     
     knob_names = re.findall(r"\*\*(.+?)\*\*", choice.message)
 
-    # 去重并转换为 JSON 格式的集合
+    # Remove duplicates and convert to a JSON-formatted set
     knob_set = set(knob_names)
     return knob_set
 
 
 def knob_select():
-    model = "gpt-4"
+    model = "gpt-4-0125-preview"
+    knob_list = call_open_source_llm(model)
 
-    knob_list = call_open_source_llm_1 (model)
     return knob_list
